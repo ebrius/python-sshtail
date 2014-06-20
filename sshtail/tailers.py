@@ -14,7 +14,7 @@ class SSHTailer(object):
     Class to handle the tailing of a single file via SSH.
     """
 
-    def __init__(self, host, remote_filename, private_key=None, verbose=False):
+    def __init__(self, host, remote_filename, private_key=None, verbose=False, port=22):
         if '@' in host:
             self.username, self.host = tuple(host.split('@'))
         else:
@@ -22,6 +22,7 @@ class SSHTailer(object):
         self.remote_filename = remote_filename
         self.private_key = private_key
         self.client = None
+        self.port = port
         self.sftp_client = None
         self.remote_file_size = None
         self.line_terminators = ['\r', '\n', '\r\n']
@@ -38,9 +39,9 @@ class SSHTailer(object):
         self.client.load_system_host_keys()
         self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         if self.private_key:
-            self.client.connect(self.host, username=self.username, pkey=self.private_key)
+            self.client.connect(self.host, username=self.username, port=self.port, pkey=self.private_key)
         else:
-            self.client.connect(self.host, username=self.username)
+            self.client.connect(self.host, username=self.username, port=self.port)
 
         if self.verbose:
             print "Opening remote file %s..." % self.remote_filename
@@ -105,7 +106,7 @@ class SSHMultiTailer(object):
     Class to handle tailing of multiple files.
     """
 
-    def __init__(self, host_files, poll_interval=2.0, private_key=None, verbose=False):
+    def __init__(self, host_files, poll_interval=2.0, private_key=None, verbose=False, port=22):
         """
         host_files is a dictionary whose keys must correspond to unique
         remote hosts to which this machine has access (ideally via SSH key).
@@ -118,6 +119,7 @@ class SSHMultiTailer(object):
         self.private_key = private_key
         self.tailers = {}
         self.verbose = verbose
+        self.port = port
 
 
     def connect(self):
@@ -131,7 +133,7 @@ class SSHMultiTailer(object):
         for host, files in self.host_files.iteritems():
             self.tailers[host] = {}
             for f in files:
-                self.tailers[host][f] = SSHTailer(host, f, private_key=self.private_key, verbose=self.verbose)
+                self.tailers[host][f] = SSHTailer(host, f, private_key=self.private_key, verbose=self.verbose, port=self.port)
 
 
 
